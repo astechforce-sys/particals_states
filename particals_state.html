@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>State of Matter by AS.TechForce</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #f1f8e9);
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #00695c;
+      color: white;
+      padding: 20px;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+
+    .main {
+      display: flex;
+      margin-top: 20px;
+      margin: 40px;
+      gap: 20px;
+    }
+    .info {
+      padding-top: 50px;
+      margin: 20px auto;
+      max-width: 700px;
+      text-align: justify;
+      font-size: 1em;
+      color: #333;
+    }
+    canvas {
+      border: 2px solid #004d40;
+      border-radius: 10px;
+      background-color: white;
+    }
+    .controls {
+      margin-top: 15px;
+    }
+    button {
+      background: #00796b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover {
+      background: #004d40;
+    }
+    input[type=range] {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <header>State of Matter by AS.TechForce</header>
+
+  <div class="main">
+  <div class="info">
+    <p><strong>Definition:</strong> States of matter are the distinct forms that different phases of matter take on. The most common states are <strong>solid</strong>, <strong>liquid</strong>, and <strong>gas</strong>.</p>
+    <ul>
+      <li><strong>Solid:</strong> Particles are tightly packed and vibrate in fixed positions.</li>
+      <li><strong>Liquid:</strong> Particles are close but move past each other freely.</li>
+      <li><strong>Gas:</strong> Particles are far apart and move quickly in all directions.</li>
+    </ul>
+  </div>
+
+  <canvas id="matterCanvas" width="700" height="400"></canvas>
+  </div>
+
+  <div class="controls">
+    <button onclick="setState('solid')">Solid</button>
+    <button onclick="setState('liquid')">Liquid</button>
+    <button onclick="setState('gas')">Gas</button>
+    <label for="speed">Speed:</label>
+    <input type="range" id="speed" min="0.5" max="3" step="0.1" value="1" onchange="changeSpeed(this.value)" />
+  </div>
+
+  <script>
+  const canvas = document.getElementById('matterCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const numParticles = 72;
+  let particles = [];
+  let state = 'solid';
+  let speedFactor = 1;
+
+  // Liquid ka pani wala area (bottom half)
+  const waterTop = canvas.height / 2; // pani start hoga middle se
+  const waterBottom = canvas.height;
+
+  class Particle {
+    constructor(x, y, color = '#00796b') {
+      this.x = x;
+      this.y = y;
+      this.vx = (Math.random() - 0.5) * 2;
+      this.vy = (Math.random() - 0.5) * 2;
+      this.color = color;
+    }
+    update() {
+      this.x += this.vx * speedFactor;
+      this.y += this.vy * speedFactor;
+
+      // Boundaries depend on state
+      if (state === "liquid") {
+        // restrict only inside water area
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < waterTop || this.y > waterBottom) this.vy *= -1;
+      } else {
+        // Normal (solid/gas full canvas)
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+  }
+
+  function initParticles() {
+    particles = [];
+    for (let i = 0; i < numParticles; i++) {
+      particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
+    }
+  }
+
+  function setState(newState) {
+    state = newState;
+    if (state === 'solid') {
+      arrangeSolid();
+    } else if (state === 'liquid') {
+      arrangeLiquid();
+    } else if (state === 'gas') {
+      arrangeGas();
+    }
+  }
+
+  function arrangeSolid() {
+    const cols = 9;
+    const spacing = 60;
+    let x0 = 100;
+    let y0 = 80;
+    particles.forEach((p, i) => {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      p.x = x0 + col * spacing;
+      p.y = y0 + row * spacing;
+      p.vx = (Math.random() - 0.5) * 0.2;
+      p.vy = (Math.random() - 0.5) * 0.2;
+      p.color = "#2e7d32";  // solid green
+    });
+  }
+
+  function arrangeLiquid() {
+    particles.forEach(p => {
+      // restrict position in water area only
+      p.x = canvas.width / 2 + (Math.random() - 0.5) * 250;
+      p.y = waterTop + (Math.random()) * (waterBottom - waterTop);
+      p.vx = (Math.random() - 0.5) * 1;
+      p.vy = (Math.random() - 0.5) * 1;
+      p.color = "#1565c0";  // blue for liquid
+    });
+  }
+
+  function arrangeGas() {
+    particles.forEach(p => {
+      p.x = Math.random() * canvas.width;
+      p.y = Math.random() * canvas.height;
+      p.vx = (Math.random() - 0.5) * 3;
+      p.vy = (Math.random() - 0.5) * 3;
+      p.color = "#c62828";  // red for gas
+    });
+  }
+
+  function changeSpeed(val) {
+    speedFactor = parseFloat(val);
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Agar liquid hai to pani ka rectangle draw karo
+    if (state === "liquid") {
+      let gradient = ctx.createLinearGradient(0, waterTop, 0, waterBottom);
+      gradient.addColorStop(0, "#64b5f6"); // light blue
+      gradient.addColorStop(1, "#1565c0"); // dark blue
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, waterTop, canvas.width, waterBottom - waterTop);
+    }
+
+    for (let p of particles) {
+      p.update();
+      p.draw();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  initParticles();
+  setState('solid');
+  animate();
+</script>
+
+</body>
+</html>
+
